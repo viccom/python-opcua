@@ -130,20 +130,21 @@ class ThreadLoop(threading.Thread):
             self._cond.wait()
 
     def run(self):
-        self.logger.debug("Starting subscription thread")
+        self.logger.debug("Starting asyncio loop thread")
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         with self._cond:
             self._cond.notify_all()
         self.loop.run_forever()
-        self.logger.debug("subscription thread ended")
+        self.loop.close()
+        self.logger.debug("asyncio loop thread ended %s", self.loop)
 
     def create_server(self, proto, hostname, port):
         return self.loop.create_server(proto, hostname, port)
 
     def stop(self):
         """
-        stop subscription loop, thus the subscription thread
+        stop thread and internal asyncio loop
         """
         self.loop.call_soon_threadsafe(self.loop.stop)
 

@@ -47,6 +47,7 @@ class UASocketClient(object):
         """
         with self._lock:
             request.RequestHeader = self._create_request_header(timeout)
+            self.logger.debug("Sending ua request %s", request)
             try:
                 binreq = request.to_binary()
             except:

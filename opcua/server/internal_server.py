@@ -41,8 +41,9 @@ class ServerDesc(object):
 
 class InternalServer(object):
 
-    def __init__(self):
+    def __init__(self, loop):
         self.logger = logging.getLogger(__name__)
+        self.loop = loop
         self.endpoints = []
         self._channel_id_counter = 5
         self.allow_remote_admin = True
@@ -63,7 +64,6 @@ class InternalServer(object):
         #importer = xmlimporter.XmlImporter(self.node_mgt_service)
         #importer.import_xml("/home/olivier/python-opcua/schemas/Opc.Ua.NodeSet2.xml")
 
-        self.loop = utils.ThreadLoop()
         self.subscription_service = SubscriptionService(self.loop, self.aspace)
 
         # create a session to use on server side
@@ -79,11 +79,11 @@ class InternalServer(object):
     def dump_address_space(self, path):
         self.aspace.dump(path)
 
-    def start(self):
+    def start(self, loop):
         self.logger.info("starting internal server")
+        self.loop = loop
         for edp in self.endpoints:
             self._known_servers[edp.Server.ApplicationUri] = ServerDesc(edp.Server)
-        self.loop.start()
         Node(self.isession, ua.NodeId(ua.ObjectIds.Server_ServerStatus_State)).set_value(0)
         Node(self.isession, ua.NodeId(ua.ObjectIds.Server_ServerStatus_StartTime)).set_value(datetime.utcnow())
         if not self.disabled_clock:
@@ -91,7 +91,7 @@ class InternalServer(object):
 
     def stop(self):
         self.logger.info("stopping internal server")
-        self.loop.stop()
+        #FIXME: stop clock and maybe other things
 
     def _set_current_time(self):
         self.current_time_node.set_value(datetime.utcnow())

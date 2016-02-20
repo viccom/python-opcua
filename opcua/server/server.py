@@ -14,6 +14,7 @@ from opcua import ua
 from opcua.server.binary_server_asyncio import BinaryServer
 from opcua.server.internal_server import InternalServer
 from opcua.common.node import Node
+from opcua.common import utils
 from opcua.common.event import Event
 from opcua.common.subscription import Subscription
 from opcua.common import xmlimporter
@@ -68,7 +69,8 @@ class Server(object):
         self.name = "FreeOpcUa Python Server"
         self.application_type = ua.ApplicationType.ClientAndServer
         self.default_timeout = 3600000
-        self.iserver = InternalServer()
+        self.loop = utils.ThreadLoop()  # loop does not start until we call start
+        self.iserver = InternalServer(self.loop)
         self.bserver = None
         self._discovery_clients = {}
         self._discovery_period = 60
@@ -240,9 +242,10 @@ class Server(object):
         """
         Start to listen on network
         """
+        self.loop.start()
         self._setup_server_nodes()
-        self.iserver.start()
-        self.bserver = BinaryServer(self.iserver, self.endpoint.hostname, self.endpoint.port)
+        self.iserver.start(self.loop)
+        self.bserver = BinaryServer(self.loop, self.iserver, self.endpoint.hostname, self.endpoint.port)
         self.bserver.set_policies(self._policies)
         self.bserver.start()
 
@@ -254,6 +257,7 @@ class Server(object):
             client.disconnect()
         self.bserver.stop()
         self.iserver.stop()
+        self.loop.stop()
 
     def get_root_node(self):
         """

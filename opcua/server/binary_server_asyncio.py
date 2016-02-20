@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 
 class BinaryServer(object):
 
-    def __init__(self, internal_server, hostname, port):
+    def __init__(self, loop, internal_server, hostname, port):
         self.logger = logging.getLogger(__name__)
         self.hostname = hostname
         self.port = port
         self.iserver = internal_server
-        self.loop = internal_server.loop
+        self.loop = loop
         self._server = None
         self._policies = []
 

@@ -332,7 +332,7 @@ class Client(object):
         self.keepalive.start()
         return response
 
-    def server_policy_id(self, token_type, default):
+    def _find_matching_policy_id(self, token_type, default):
         """
         Find PolicyId of server's UserTokenPolicy by token_type.
         Return default if there's no matching UserTokenPolicy.
@@ -342,7 +342,7 @@ class Client(object):
                 return policy.PolicyId
         return default
 
-    def server_policy_uri(self, token_type):
+    def _find_matching_policy_uri(self, token_type):
         """
         Find SecurityPolicyUri of server's UserTokenPolicy by token_type.
         If SecurityPolicyUri is empty, use default SecurityPolicyUri
@@ -367,10 +367,10 @@ class Client(object):
         params.LocaleIds.append("en")
         if not username and not certificate:
             params.UserIdentityToken = ua.AnonymousIdentityToken()
-            params.UserIdentityToken.PolicyId = self.server_policy_id(ua.UserTokenType.Anonymous, b"anonymous")
+            params.UserIdentityToken.PolicyId = self._find_matching_policy_id(ua.UserTokenType.Anonymous, b"anonymous")
         elif certificate:
             params.UserIdentityToken = ua.X509IdentityToken()
-            params.UserIdentityToken.PolicyId = self.server_policy_id(ua.UserTokenType.Certificate, b"certificate_basic256")
+            params.UserIdentityToken.PolicyId = self._find_matching_policy_id(ua.UserTokenType.Certificate, b"certificate_basic256")
             params.UserIdentityToken.CertificateData = uacrypto.der_from_x509(certificate)
             # specs part 4, 5.6.3.1: the data to sign is created by appending
             # the last serverNonce to the serverCertificate
@@ -386,12 +386,14 @@ class Client(object):
                 # see specs part 4, 7.36.3: if the token is encrypted, password
                 # shall be converted to UTF-8 and serialized with server nonce
                 etoken = ua.pack_bytes(bytes(password, "utf8") + self._server_nonce)
-                (data, uri) = security_policies.encrypt_asymmetric(pubkey,
-                        etoken,
-                        self.server_policy_uri(ua.UserTokenType.UserName))
+                data, uri = security_policies.encrypt_asymmetric(
+                    pubkey,
+                    etoken,
+                    self._find_matching_policy_uri(ua.UserTokenType.UserName)
+                )
                 params.UserIdentityToken.Password = data
                 params.UserIdentityToken.EncryptionAlgorithm = uri
-            params.UserIdentityToken.PolicyId = self.server_policy_id(ua.UserTokenType.UserName, b"username_basic256")
+            params.UserIdentityToken.PolicyId = self._find_matching_policy_id(ua.UserTokenType.UserName, b"username_basic256")
         return self.uaclient.activate_session(params)
 
     def close_session(self):

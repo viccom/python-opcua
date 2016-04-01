@@ -246,7 +246,7 @@ class Client(object):
         params.SecurityMode = self.security_policy.Mode
         params.RequestedLifetime = self.secure_channel_timeout
         nonce = utils.create_nonce(self.security_policy.symmetric_key_size)   # length should be equal to the length of key of symmetric encryption
-        params.ClientNonce = nonce	# this nonce is used to create a symmetric key
+        params.ClientNonce = nonce  # this nonce is used to create a symmetric key
         result = self.uaclient.open_secure_channel(params)
         self.security_policy.make_symmetric_key(nonce, result.ServerNonce)
         self.secure_channel_timeout = result.SecurityToken.RevisedLifetime
@@ -395,9 +395,7 @@ class Client(object):
                 # see specs part 4, 7.36.3: if the token is encrypted, password
                 # shall be converted to UTF-8 and serialized with server nonce
                 etoken = ua.pack_bytes(bytes(password, "utf8") + self._server_nonce)
-                (data, uri) = security_policies.encrypt_asymmetric(pubkey,
-                        etoken,
-                        policy_uri)
+                data, uri = security_policies.encrypt_asymmetric(pubkey, etoken, policy_uri)
                 params.UserIdentityToken.Password = data
                 params.UserIdentityToken.EncryptionAlgorithm = uri
             params.UserIdentityToken.PolicyId = self.server_policy_id(ua.UserTokenType.UserName, b"username_basic256")
@@ -457,4 +455,4 @@ class Client(object):
 
     def delete_nodes(self, nodes, recursive=False):
         return delete_nodes(self.uaclient, nodes, recursive)
-            
+     
